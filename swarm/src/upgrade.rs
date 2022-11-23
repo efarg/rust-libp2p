@@ -29,10 +29,8 @@ use libp2p_core::upgrade;
 /// Do not implement this trait yourself. Instead, please implement
 /// [`UpgradeInfo`](upgrade::UpgradeInfo).
 pub trait UpgradeInfoSend: Send + 'static {
-    /// Equivalent to [`UpgradeInfo::Info`](upgrade::UpgradeInfo::Info).
-    type Info: upgrade::ProtocolName + Clone + Send + 'static;
     /// Equivalent to [`UpgradeInfo::InfoIter`](upgrade::UpgradeInfo::InfoIter).
-    type InfoIter: Iterator<Item = Self::Info> + Send + 'static;
+    type InfoIter;
 
     /// Equivalent to [`UpgradeInfo::protocol_info`](upgrade::UpgradeInfo::protocol_info).
     fn protocol_info(&self) -> Self::InfoIter;
@@ -41,10 +39,8 @@ pub trait UpgradeInfoSend: Send + 'static {
 impl<T> UpgradeInfoSend for T
 where
     T: upgrade::UpgradeInfo + Send + 'static,
-    T::Info: Send + 'static,
     <T::InfoIter as IntoIterator>::IntoIter: Send + 'static,
 {
-    type Info = T::Info;
     type InfoIter = <T::InfoIter as IntoIterator>::IntoIter;
 
     fn protocol_info(&self) -> Self::InfoIter {
@@ -66,13 +62,12 @@ pub trait OutboundUpgradeSend: UpgradeInfoSend {
     type Future: Future<Output = Result<Self::Output, Self::Error>> + Send + 'static;
 
     /// Equivalent to [`OutboundUpgrade::upgrade_outbound`](upgrade::OutboundUpgrade::upgrade_outbound).
-    fn upgrade_outbound(self, socket: NegotiatedSubstream, info: Self::Info) -> Self::Future;
+    fn upgrade_outbound(self, socket: NegotiatedSubstream, info: upgrade::ProtocolName) -> Self::Future;
 }
 
-impl<T, TInfo> OutboundUpgradeSend for T
+impl<T> OutboundUpgradeSend for T
 where
-    T: upgrade::OutboundUpgrade<NegotiatedSubstream, Info = TInfo> + UpgradeInfoSend<Info = TInfo>,
-    TInfo: upgrade::ProtocolName + Clone + Send + 'static,
+    T: upgrade::OutboundUpgrade<NegotiatedSubstream> + UpgradeInfoSend,
     T::Output: Send + 'static,
     T::Error: Send + 'static,
     T::Future: Send + 'static,
@@ -81,7 +76,7 @@ where
     type Error = T::Error;
     type Future = T::Future;
 
-    fn upgrade_outbound(self, socket: NegotiatedSubstream, info: TInfo) -> Self::Future {
+    fn upgrade_outbound(self, socket: NegotiatedSubstream, info: upgrade::ProtocolName) -> Self::Future {
         upgrade::OutboundUpgrade::upgrade_outbound(self, socket, info)
     }
 }
@@ -100,13 +95,12 @@ pub trait InboundUpgradeSend: UpgradeInfoSend {
     type Future: Future<Output = Result<Self::Output, Self::Error>> + Send + 'static;
 
     /// Equivalent to [`InboundUpgrade::upgrade_inbound`](upgrade::InboundUpgrade::upgrade_inbound).
-    fn upgrade_inbound(self, socket: NegotiatedSubstream, info: Self::Info) -> Self::Future;
+    fn upgrade_inbound(self, socket: NegotiatedSubstream, info: upgrade::ProtocolName) -> Self::Future;
 }
 
-impl<T, TInfo> InboundUpgradeSend for T
+impl<T> InboundUpgradeSend for T
 where
-    T: upgrade::InboundUpgrade<NegotiatedSubstream, Info = TInfo> + UpgradeInfoSend<Info = TInfo>,
-    TInfo: upgrade::ProtocolName + Clone + Send + 'static,
+    T: upgrade::InboundUpgrade<NegotiatedSubstream> + UpgradeInfoSend,
     T::Output: Send + 'static,
     T::Error: Send + 'static,
     T::Future: Send + 'static,
@@ -115,7 +109,7 @@ where
     type Error = T::Error;
     type Future = T::Future;
 
-    fn upgrade_inbound(self, socket: NegotiatedSubstream, info: TInfo) -> Self::Future {
+    fn upgrade_inbound(self, socket: NegotiatedSubstream, info: upgrade::ProtocolName) -> Self::Future {
         upgrade::InboundUpgrade::upgrade_inbound(self, socket, info)
     }
 }
@@ -129,7 +123,6 @@ where
 pub struct SendWrapper<T>(pub T);
 
 impl<T: UpgradeInfoSend> upgrade::UpgradeInfo for SendWrapper<T> {
-    type Info = T::Info;
     type InfoIter = T::InfoIter;
 
     fn protocol_info(&self) -> Self::InfoIter {
@@ -142,7 +135,7 @@ impl<T: OutboundUpgradeSend> upgrade::OutboundUpgrade<NegotiatedSubstream> for S
     type Error = T::Error;
     type Future = T::Future;
 
-    fn upgrade_outbound(self, socket: NegotiatedSubstream, info: T::Info) -> Self::Future {
+    fn upgrade_outbound(self, socket: NegotiatedSubstream, info: upgrade::ProtocolName) -> Self::Future {
         OutboundUpgradeSend::upgrade_outbound(self.0, socket, info)
     }
 }
@@ -152,7 +145,7 @@ impl<T: InboundUpgradeSend> upgrade::InboundUpgrade<NegotiatedSubstream> for Sen
     type Error = T::Error;
     type Future = T::Future;
 
-    fn upgrade_inbound(self, socket: NegotiatedSubstream, info: T::Info) -> Self::Future {
+    fn upgrade_inbound(self, socket: NegotiatedSubstream, info: upgrade::ProtocolName) -> Self::Future {
         InboundUpgradeSend::upgrade_inbound(self.0, socket, info)
     }
 }
