@@ -30,7 +30,7 @@ use libp2p_core::upgrade;
 /// [`UpgradeInfo`](upgrade::UpgradeInfo).
 pub trait UpgradeInfoSend: Send + 'static {
     /// Equivalent to [`UpgradeInfo::InfoIter`](upgrade::UpgradeInfo::InfoIter).
-    type InfoIter;
+    type InfoIter: Iterator<Item = upgrade::ProtocolName> + Send + 'static;
 
     /// Equivalent to [`UpgradeInfo::protocol_info`](upgrade::UpgradeInfo::protocol_info).
     fn protocol_info(&self) -> Self::InfoIter;
