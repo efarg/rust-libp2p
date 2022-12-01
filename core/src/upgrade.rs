@@ -139,7 +139,7 @@ pub use multistream_select::{NegotiatedComplete, NegotiationError, ProtocolError
 pub struct ProtocolName(Cow<'static, str>);
 
 impl ProtocolName {
-    fn protocol_name(&self) -> &str {
+    pub fn protocol_name(&self) -> &str {
         self.0.as_ref()
     }
 }

@@ -18,15 +18,14 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-use crate::core::upgrade::{InboundUpgrade, OutboundUpgrade, UpgradeInfo};
-use bytes::Bytes;
+use crate::core::upgrade::{InboundUpgrade, OutboundUpgrade, ProtocolName, UpgradeInfo};
 use futures::prelude::*;
 use std::{iter, sync::Arc};
 
 /// Implementation of `ConnectionUpgrade`. Convenient to use with small protocols.
 #[derive(Debug)]
 pub struct SimpleProtocol<F> {
-    info: Bytes,
+    info: ProtocolName,
     // Note: we put the closure `F` in an `Arc` because Rust closures aren't automatically clonable
     // yet.
     upgrade: Arc<F>,
@@ -34,12 +33,9 @@ pub struct SimpleProtocol<F> {
 
 impl<F> SimpleProtocol<F> {
     /// Builds a `SimpleProtocol`.
-    pub fn new<N>(info: N, upgrade: F) -> SimpleProtocol<F>
-    where
-        N: Into<Bytes>,
-    {
+    pub fn new(info: ProtocolName, upgrade: F) -> SimpleProtocol<F> {
         SimpleProtocol {
-            info: info.into(),
+            info: info,
             upgrade: Arc::new(upgrade),
         }
     }
@@ -55,8 +51,7 @@ impl<F> Clone for SimpleProtocol<F> {
 }
 
 impl<F> UpgradeInfo for SimpleProtocol<F> {
-    type Info = Bytes;
-    type InfoIter = iter::Once<Self::Info>;
+    type InfoIter = iter::Once<ProtocolName>;
 
     fn protocol_info(&self) -> Self::InfoIter {
         iter::once(self.info.clone())
@@ -73,7 +68,7 @@ where
     type Error = E;
     type Future = O;
 
-    fn upgrade_inbound(self, socket: C, _: Self::Info) -> Self::Future {
+    fn upgrade_inbound(self, socket: C, _: ProtocolName) -> Self::Future {
         let upgrade = &self.upgrade;
         upgrade(socket)
     }
@@ -89,7 +84,7 @@ where
     type Error = E;
     type Future = O;
 
-    fn upgrade_outbound(self, socket: C, _: Self::Info) -> Self::Future {
+    fn upgrade_outbound(self, socket: C, _: ProtocolName) -> Self::Future {
         let upgrade = &self.upgrade;
         upgrade(socket)
     }

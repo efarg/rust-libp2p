@@ -90,7 +90,6 @@ use libp2p_core::{
     multihash::Multihash,
     muxing::StreamMuxerBox,
     transport::{self, ListenerId, TransportError, TransportEvent},
-    upgrade::ProtocolName,
     Endpoint, Executor, Multiaddr, Negotiated, PeerId, Transport,
 };
 use registry::{AddressIntoIter, Addresses};
@@ -1384,7 +1383,7 @@ where
             .inbound_protocol()
             .protocol_info()
             .into_iter()
-            .map(|info| info.protocol_name().to_vec())
+            .map(|info| info.protocol_name().as_bytes().to_vec())
             .collect();
 
         // If no executor has been explicitly configured, try to set up a thread pool.

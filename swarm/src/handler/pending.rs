@@ -25,7 +25,7 @@ use crate::handler::{
 };
 use crate::NegotiatedSubstream;
 use libp2p_core::{
-    upgrade::{InboundUpgrade, OutboundUpgrade, PendingUpgrade},
+    upgrade::{InboundUpgrade, OutboundUpgrade, PendingUpgrade, ProtocolName},
     Multiaddr,
 };
 use std::task::{Context, Poll};
@@ -34,11 +34,11 @@ use void::Void;
 /// Implementation of [`ConnectionHandler`] that returns a pending upgrade.
 #[derive(Clone, Debug)]
 pub struct PendingConnectionHandler {
-    protocol_name: String,
+    protocol_name: ProtocolName,
 }
 
 impl PendingConnectionHandler {
-    pub fn new(protocol_name: String) -> Self {
+    pub fn new(protocol_name: ProtocolName) -> Self {
         PendingConnectionHandler { protocol_name }
     }
 }
